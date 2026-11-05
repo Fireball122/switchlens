@@ -1,0 +1,11 @@
+build/
+dist/
+*.o
+*.elf
+*.nso
+*.nro
+*.ovl
+*.nsp
+*.nacp
+*.map
+*.npdm
