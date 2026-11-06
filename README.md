@@ -1,67 +1,88 @@
 # Switchlens
 
-Use USB-C DisplayPort AR glasses on the Nintendo Switch's own USB-C port. No dock, no adapter
-tricks: Switchlens talks to the console's USB-PD controller (BM92T36), puts the port into DisplayPort
-Alt Mode, switches the console to docked output, and puts everything back when you unplug.
+Use USB-C DisplayPort AR glasses on the Nintendo Switch's own USB-C port. No dock and no adapter.
+Switchlens talks to the console's USB-PD controller (BM92T36), enables DisplayPort Alt Mode, switches the
+console to docked output, and restores everything when you unplug the glasses.
 
-It is an [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) boot2 sysmodule plus a
-[Tesla](https://github.com/WerWolv/Tesla-Menu)/Ultrahand overlay for the on/off switch.
+It is an [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) boot2 system module plus a
+[Tesla](https://github.com/WerWolv/Tesla-Menu)/[Ultrahand](https://github.com/ppkantorski/Ultrahand-Overlay) overlay for the on/off switch.
 
-> **Status:** works on the author's console. Tested only on firmware 23.0.1, Atmosphere 1.12.1, emuMMC,
-> one pair of glasses. Anything else is unverified, so please report results (see [Reporting](#reporting)).
-> Use at your own risk. This is not affiliated with or endorsed by Nintendo.
+## Read this first
+
+- **Experimental. Tested on one setup only:** firmware 23.0.1, Atmosphere 1.12.1, emuMMC, one pair of glasses.
+  Other firmware, Atmosphere versions, glasses, and Switch models (Lite, OLED) are **untested**.
+- **It runs at boot and changes display output and sleep behaviour.** A bug can freeze the console, leave it
+  with a black screen, or make it misbehave on wake. Back up your SD card before installing, and read
+  [Safe mode](#safe-mode) before you start.
+- **Not affiliated with or endorsed by Nintendo.** Provided as-is, without warranty (see [LICENSE](LICENSE)).
+- **Gyro is not enabled in this release.** The code has an experimental gyro path that is off by default.
+  Do not set `controller.flag` to `2` or `3`; those values are for development and are not tested.
+- **NFC is not forwarded.** emuiibo (if installed and emulation is on) intercepts NFC, so real amiibo may not
+  scan. Turn emuiibo emulation off to test real amiibo.
+- **Joy-Con Support is on by default.** While AR is on, attached Joy-Cons act as one wireless Pro Controller.
+  This changes how controller input reaches games; turn it off in the overlay if you see problems.
 
 ## Features
 
-- **DisplayPort Alt Mode on the console's USB-C port**: plug in, flip one switch, the picture moves to the glasses.
-- **Clean revert**: unplug and the console goes back to its own screen; replug and AR resumes.
-- **Sleep and wake safe**: the module stays out of the way during the sleep transition and re-engages after wake.
-- **Joy-Cons keep working** while AR is on. They are presented to games as one wireless Pro Controller
-  (this is what makes Mario Kart 8 Deluxe work).
-- **Overlay**: live status card (service, USB-C, Joy-Cons) and two switches.
+- **DisplayPort Alt Mode on the console's USB-C port.** Plug in, turn AR on, and the picture moves to the glasses.
+- **Clean revert.** Unplug and the console returns to its own screen. Replug and AR comes back.
+- **Sleep and wake handling.** The module stays out of the way during the sleep transition and re-engages after wake.
+- **Joy-Cons keep working while AR is on**, presented to games as a wireless Pro Controller (this is what makes
+  Mario Kart 8 Deluxe work).
+- **Overlay status card**: service state, USB-C state, Joy-Con state, and two switches (AR Display, Joy-Con Support).
 
-## Not supported / limits
+## Requirements
 
-- Gyro through the virtual Pro Controller is **experimental** (`controller.flag` = `2` or `3`) and its result in games is not yet confirmed. See [docs/how-it-works.md](docs/how-it-works.md#gyro-experimental).
-- Joy-Con NFC is not forwarded to the virtual controller. If real amiibo do not scan, check whether
-  emuiibo emulation is on: emuiibo intercepts all NFC while enabled.
-- Switch Lite: not expected to work (no docked output); untested. Other Switch models: unverified.
-- Only the BM92T36 USB-PD controller path is implemented.
+- Nintendo Switch with [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) (tested 1.12.1) and firmware 23.0.1.
+- A Tesla-compatible overlay loader: [nx-ovlloader](https://github.com/ppkantorski/nx-ovlloader) plus
+  Tesla Menu or Ultrahand, installed separately. See the [ConsoleMods overlay guide](https://consolemods.org/wiki/Switch:Overlay_Apps).
+- AR glasses that accept DisplayPort over USB-C.
 
-## Install
+## Install (release zip)
 
-1. Power off, put the SD card in your PC.
-2. Copy the contents of a release (or of `dist/` after building) onto the SD card root, merging folders:
-   - `atmosphere/contents/420000000007E51C/` (`exefs.nsp`, `toolbox.json`, `flags/boot2.flag`)
-   - `switch/.overlays/switchlens.ovl`
-3. Boot Atmosphere. The state folder `switch/ar_glasses/` is created automatically.
+1. Download `Switchlens-v1.0.0.zip` from the Releases page. Back up your SD card.
+2. Extract it. You get two folders: `atmosphere/` and `switch/`.
+3. Copy both folders to the **root** of the SD card, merging with what is already there.
+4. Put the SD card back in the Switch and boot it.
+5. Open the overlay menu, choose **Switchlens**, plug in the glasses, then turn on **AR Display**.
 
-Requires Atmosphere, a Tesla-compatible overlay loader (nx-ovlloader + Tesla Menu or Ultrahand), and glasses
-that speak DisplayPort over USB-C.
+What you should see:
+- The status card shows the service as running within a few seconds of boot.
+- After plugging in the glasses and turning on AR Display, the USB-C row changes to connected and the picture moves to the glasses.
+- Unplugging returns the picture to the console.
+
+The first boot creates `switch/ar_glasses/` and writes `log.txt`.
 
 ## Use
 
-Open the overlay menu, choose **Switchlens**, plug in the glasses, switch **AR Display** on. Unplug to return to
-the console screen. **Joy-Con Support** (on by default) makes attached Joy-Cons act as a wireless Pro Controller
-while AR is on.
+- **AR Display**: on or off. Off gives the screen back to the console but leaves the glasses connected.
+- **Joy-Con Support**: on by default. Off stops the virtual Pro Controller and returns Joy-Con input to the console.
 
-## Uninstall / safe mode
+## Safe mode
 
-- Disable: rename `atmosphere/contents/420000000007E51C/flags/boot2.flag` to `boot2.flag.disabled`, reboot.
-- Remove: delete `atmosphere/contents/420000000007E51C`, `switch/.overlays/switchlens.ovl`, `switch/ar_glasses`.
-- Sleep problems: create an empty `switch/ar_glasses/no_psc.flag` to skip all sleep handling, reboot, and report it.
+- **Disable the module:** rename `atmosphere/contents/420000000007E51C/flags/boot2.flag` to `boot2.flag.disabled`, then reboot.
+- **Skip sleep handling:** create an empty file `switch/ar_glasses/no_psc.flag`, then reboot.
+- **Remove:** delete `atmosphere/contents/420000000007E51C/`, `switch/.overlays/switchlens.ovl`, and `switch/ar_glasses/`.
+
+If the console freezes at boot, boot into safe mode (or edit the SD card on a PC) and disable the module as above.
 
 ## Files in `switch/ar_glasses/`
 
 | File | Meaning |
 |---|---|
 | `active.flag` | `1` AR wanted, `0` off. Written by the overlay. |
-| `controller.flag` | `0` off, `1` Joy-Cons as Pro Controller (default when missing), `2`/`3` plus experimental gyro. |
-| `state.bin` | Live status for the overlay (see docs). |
-| `log.txt`, `log_prev.txt` | Current and previous boot log. |
+| `controller.flag` | `0` off, `1` Joy-Cons as Pro Controller (default when missing). `2`/`3` are experimental gyro values; do not use. |
+| `state.bin` | Live status for the overlay (see the docs). |
+| `log.txt`, `log_prev.txt` | Current and previous boot logs. |
 | `no_psc.flag` | Optional: disables sleep handling. |
 
-## Build
+## Reporting problems
+
+Please include: firmware and Atmosphere version, Switch model, glasses model, what you did, what happened, and
+`switch/ar_glasses/log.txt` and `log_prev.txt`. Also include any new files in `atmosphere/fatal_reports/` or
+`atmosphere/crash_reports/` made around the time of the problem. Open an issue on this repository.
+
+## Build from source
 
 Needs devkitPro (devkitA64, libnx, switch-tools), Python 3, and for the overlay
 [libtesla](https://github.com/WerWolv/libtesla).
@@ -71,19 +92,13 @@ python build.py all --libtesla /path/to/libtesla     # or: sysmodule | overlay
 ```
 
 Output goes to `dist/` in SD-card layout. `DEVKITPRO` selects the toolchain (defaults to `C:\devkitPro` on Windows,
-`/opt/devkitpro` elsewhere). `probes/` holds the standalone homebrew probes used during research; see the docs.
-
-## Reporting
-
-Please include: firmware and Atmosphere version, Switch model, glasses model, what happened, and
-`switch/ar_glasses/log.txt` / `log_prev.txt`, plus anything in `atmosphere/crash_reports`.
+`/opt/devkitpro` elsewhere). Source for the standalone probes used during research is in `probes/`.
 
 ## How it works
 
-[docs/how-it-works.md](docs/how-it-works.md)
+See [docs/how-it-works.md](docs/how-it-works.md).
 
 ## License
 
 GPL-2.0-or-later, see [LICENSE](LICENSE). The overlay links [libtesla](https://github.com/WerWolv/libtesla)
-(GPL-2.0-or-later); the whole project uses one license for simplicity. Built on
-[libnx](https://github.com/switchbrew/libnx) (ISC), Atmosphere, and the Switchbrew documentation.
+(GPL-2.0-or-later). Built on [libnx](https://github.com/switchbrew/libnx) (ISC), Atmosphere, and the Switchbrew documentation.
